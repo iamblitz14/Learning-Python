@@ -1,5 +1,0 @@
-name,ip,status
-web-prod-01,10.0.0.1,active
-db-prod-01,10.0.0.2,active
-web-stage-01,192.168.1.1,active
-lb-prod-01,10.0.0.3,active

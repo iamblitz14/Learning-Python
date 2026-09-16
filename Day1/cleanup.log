@@ -1,7 +1,0 @@
-2026-09-07 10:13:22 - [INFO] - Scanning directory: C:\Users\erickson.marcos\Pictures\Screenshots
-2026-09-07 10:13:22 - [INFO] - Looking for types: .png, .jpg
-2026-09-07 10:13:22 - [INFO] - Target age: Older than 3 days (Before 2026-09-04)
-2026-09-07 10:13:22 - [WARNING] - Running in DRY RUN mode. No files will be deleted.
-2026-09-07 10:13:22 - [INFO] - [DRY RUN] Would delete (Age: 2026-09-03): Screenshot 2026-09-03 084652.png
-2026-09-07 10:13:22 - [INFO] - [DRY RUN] Would delete (Age: 2026-09-03): Screenshot 2026-09-03 093739.png
-2026-09-07 10:13:22 - [INFO] - [DRY RUN] Would delete (Age: 2026-09-03): Screenshot 2026-09-03 135913.png
