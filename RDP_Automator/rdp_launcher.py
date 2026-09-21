@@ -3,19 +3,26 @@ from tkinter import messagebox
 from tkinter import simpledialog
 import json
 import os
+import sys
 import subprocess
 import crypto_vault
 
-CONFIG_FILE = os.path.join(os.path.dirname(__file__), ".rdp_config.json")
+# 1. Determine execution directory context (Handles standalone PyInstaller .exe execution)
+if getattr(sys, 'frozen', False):
+    APPLICATION_DIR = os.path.dirname(sys.executable)
+else:
+    APPLICATION_DIR = os.path.dirname(__file__)
+
+CONFIG_FILE = os.path.join(APPLICATION_DIR, ".rdp_config.json")
 
 class PortableSharedRDPApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Shared Multi-RDP Manager")
-        self.root.geometry("420x420") # Height increased slightly to fit new management buttons cleanly
+        self.root.geometry("420x420")
         self.root.resizable(False, False)
         
-        # 1. Boot up validation routine
+        # 2. Boot up validation routine
         self.master_key = ""
         self.profiles = self.get_saved_profiles()
         
@@ -25,21 +32,20 @@ class PortableSharedRDPApp:
             self.root.destroy()
             return
 
-        # 2. Dynamic Dropdown Population
-        # If the JSON file is blank or new, fallback to your default list
+        # 3. Dropdown Inventory Setup (Fallbacks cleanly to your core 16 nodes if database is fresh)
         saved_keys = [k for k in self.profiles.keys() if k != "validation_marker"]
         self.devices = sorted(saved_keys) if saved_keys else ["A", "B", "E", "H", "I", "J", "K", "N", "O", "P", "Q", "R", "S", "T", "U", "V"]
-        
+
+        self.selected_device = tk.StringVar(root)
         self.selected_device = tk.StringVar(value=self.devices[0])
         
-        # Dropdown Profile Selector Label
+        # Profile Selector Title
         tk.Label(root, text="Select Device Profile Target:", font=("Arial", 10, "bold")).pack(pady=10)
         
-        # Frame to hold Dropdown + Management Buttons inline
+        # Profile Management Ribbon Layout Panel
         self.profile_mgmt_frame = tk.Frame(root)
         self.profile_mgmt_frame.pack(pady=2)
         
-        # Re-built dynamic OptionMenu
         self.dropdown_menu = None
         self.render_dropdown()
         
@@ -51,7 +57,7 @@ class PortableSharedRDPApp:
         
         tk.Frame(root, height=2, bd=1, relief="groove").pack(fill="x", padx=20, pady=10)
         
-        # Form inputs
+        # Form Data Input Blocks
         tk.Label(root, text="IP Address / Hostname:").pack(anchor="w", padx=20)
         self.entry_ip = tk.Entry(root, width=48)
         self.entry_ip.pack(pady=2, padx=20)
@@ -64,7 +70,7 @@ class PortableSharedRDPApp:
         self.entry_pass = tk.Entry(root, width=48, show="*")
         self.entry_pass.pack(pady=2, padx=20)
         
-        # Core Operation Action Triggers
+        # Action Commands Button Ribbon
         self.btn_frame = tk.Frame(root)
         self.btn_frame.pack(pady=20)
         
@@ -74,7 +80,7 @@ class PortableSharedRDPApp:
         self.btn_connect = tk.Button(self.btn_frame, text="Connect Now", width=14, bg="#4CAF50", fg="white", command=self.connect_rdp)
         self.btn_connect.pack(side="left", padx=5)
         
-        # Initial field load sequence execution
+        # Hydrate entries with baseline data logs
         self.load_data()
 
     def render_dropdown(self):
@@ -83,6 +89,7 @@ class PortableSharedRDPApp:
             self.dropdown_menu.pack_forget()
         
         self.dropdown_menu = tk.OptionMenu(self.profile_mgmt_frame, self.selected_device, *self.devices, command=self.change_device)
+
         self.dropdown_menu.config(width=15)
         self.dropdown_menu.pack(side="left", padx=5)
 
@@ -167,7 +174,6 @@ class PortableSharedRDPApp:
         messagebox.showinfo("Saved!", f"Profile details for '{current}' logged securely.")
 
     def add_new_profile(self):
-        """Asks user for a profile custom label string and appends it to tracking structures."""
         new_name = simpledialog.askstring("Add Profile", "Enter identifier name or letter for new profile:").strip()
         if not new_name:
             return
@@ -176,42 +182,37 @@ class PortableSharedRDPApp:
             messagebox.showwarning("Duplicate", "A profile with that name already exists.")
             return
             
-        # Append name token, sort list structure array entries alphabetically
         self.devices.append(new_name)
         self.devices = sorted(self.devices)
         
-        # Switch selection pointer to your newly manufactured target element node context
         self.selected_device.set(new_name)
         self.render_dropdown()
         self.load_data()
 
     def delete_current_profile(self):
-        """Permanently wipes the currently selected node profile array dataset blocks completely."""
         current = self.selected_device.get()
         
         confirm = messagebox.askyesno("Confirm Deletion", f"Are you sure you want to permanently delete profile '{current}'?")
         if not confirm:
             return
             
-        # Drop key entry data structure segment from persistent state dictionary memory contexts
         if current in self.profiles:
             del self.profiles[current]
             with open(CONFIG_FILE, "w") as f:
                 json.dump(self.profiles, f, indent=4)
                 
-        # Drop element from visual active dropdown list array trackers
         self.devices.remove(current)
         
-        # Safeguard array continuity metrics: guarantee at least one visual element exists inside layout references
         if not self.devices:
             self.devices = ["A"]
             
-        self.selected_device.set(self.devices[0])
+        self.selected_device.set(self.devices)
         self.render_dropdown()
         self.load_data()
         messagebox.showinfo("Deleted", f"Profile '{current}' has been erased successfully.")
 
     def connect_rdp(self):
+        current = self.selected_device.get()
         ip = self.entry_ip.get().strip()
         user = self.entry_user.get().strip()
         password = self.entry_pass.get().strip()
@@ -220,9 +221,33 @@ class PortableSharedRDPApp:
             messagebox.showwarning("Error", "Inputs cannot be empty during launch sequence.")
             return
 
-        cmd_credentials = f"cmdkey /generic:TERMSRV/{ip} /user:{user} /pass:{password}"
-        subprocess.run(cmd_credentials, shell=True, stdout=subprocess.DEVNULL)
-        subprocess.Popen(f"mstsc /v:{ip}", shell=True)
+        try:
+            # 1. Set name format for the generated shortcut file
+            clean_display_name = f"Device_{current}"
+            
+            # 2. Inject credentials cleanly matching the stable target IP address
+            cmd_credentials = f"cmdkey /generic:TERMSRV/{ip} /user:{user} /pass:{password}"
+            subprocess.run(cmd_credentials, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+            # 3. Create the shortcut file named after our device profile label
+            temp_rdp_path = os.path.join(APPLICATION_DIR, f"{clean_display_name}.rdp")
+            
+            rdp_content = (
+                f"full address:s:{ip}\n"
+                f"username:s:{user}\n"
+                f"friendlyname:s:Device {current}\n"
+                "screen mode id:i:2\n"
+                "use multimon:i:0\n"
+            )
+            
+            with open(temp_rdp_path, "w", encoding="utf-8") as rdp_file:
+                rdp_file.write(rdp_content)
+                
+            # 4. Trigger the native Windows client targeting our device-named profile shortcut
+            subprocess.Popen(f'mstsc "{temp_rdp_path}"', shell=True)
+            
+        except Exception as e:
+            messagebox.showerror("Execution Fault", f"Automated sub-process initialization aborted: {e}")
 
 if __name__ == "__main__":
     root = tk.Tk()
