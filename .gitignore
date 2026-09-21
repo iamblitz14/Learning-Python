@@ -1,2 +1,5 @@
 RDP_Automator/.rdp_config.json
 RDP_Automator/__pycache__/
+RDP_Automator/build/
+RDP_Automator/dist/
+RDP_Automator/rdp_launcher.spec
